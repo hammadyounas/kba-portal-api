@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { access, unlink, writeFile, stat } from 'fs/promises';
+import { tmpdir } from 'os';
 import { dirname, join } from 'path';
 import { pipeline } from 'stream/promises';
 import {
@@ -15,7 +16,10 @@ export class LocalStorageService implements ObjectStorage {
   private readonly root: string;
 
   constructor(config: ConfigService) {
-    this.root = config.get<string>('STORAGE_LOCAL_ROOT') ?? join(process.cwd(), 'storage', 'private');
+    const configured = config.get<string>('STORAGE_LOCAL_ROOT');
+    this.root = process.env.VERCEL
+      ? join(tmpdir(), 'kba-private')
+      : (configured ?? join(process.cwd(), 'storage', 'private'));
     if (!existsSync(this.root)) {
       mkdirSync(this.root, { recursive: true });
     }
