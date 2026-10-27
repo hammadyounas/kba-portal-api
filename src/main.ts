@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import '@nestjs/core';
 import { AppModule } from './app.module';
 import { configureApp } from './app.factory';
 
