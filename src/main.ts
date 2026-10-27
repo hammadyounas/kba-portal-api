@@ -11,4 +11,4 @@ async function bootstrap() {
   console.log(`LAN tip: http://<your-mac-ip>:${port}/api`);
 }
 
-void bootstrap();
+bootstrap();
