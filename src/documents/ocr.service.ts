@@ -1,11 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
-import { createWorker, type Worker } from 'tesseract.js';
-import { extractText, getDocumentProxy, renderPageAsImage } from 'unpdf';
+import type { Worker } from 'tesseract.js';
 import { mkdirSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 
-const CACHE_PATH = join(process.cwd(), 'storage', 'tesseract');
+const CACHE_PATH = process.env.VERCEL
+  ? join(tmpdir(), 'tesseract')
+  : join(process.cwd(), 'storage', 'tesseract');
 const MAX_PAGES = 3;
 const MAX_TEXT = 20_000;
 const MIN_EMBEDDED_CHARS = 20;
@@ -39,6 +40,9 @@ export class OcrService implements OnModuleDestroy {
   }
 
   private async extractPdf(buffer: Buffer): Promise<string> {
+    const { extractText, getDocumentProxy, renderPageAsImage } = await import(
+      'unpdf'
+    );
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
     try {
       const extracted = await extractText(pdf, { mergePages: true });
@@ -79,6 +83,7 @@ export class OcrService implements OnModuleDestroy {
   }
 
   private async toPng(buffer: Buffer): Promise<Buffer> {
+    const { createCanvas, loadImage } = await import('@napi-rs/canvas');
     const image = await loadImage(buffer);
     const longest = Math.max(image.width, image.height);
     const scale = longest > 1800 ? 1800 / longest : 1;
@@ -105,9 +110,10 @@ export class OcrService implements OnModuleDestroy {
     return run;
   }
 
-  private worker() {
+  private async worker() {
     if (!this.engine) {
       mkdirSync(CACHE_PATH, { recursive: true });
+      const { createWorker } = await import('tesseract.js');
       const pending = createWorker('eng', undefined, {
         cachePath: CACHE_PATH,
       })
