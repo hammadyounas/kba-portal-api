@@ -41,6 +41,7 @@ export class PurchasesController {
   }
 
   @Post('checkout')
+  @Roles(Role.PUBLIC)
   checkout(@CurrentUser() user: AuthUser, @Body() dto: CheckoutDto) {
     return this.purchases.checkout(user, dto);
   }

@@ -9,6 +9,7 @@ import {
 import { DocumentStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { AuthUser } from '../auth/types/auth-user.type';
+import { Role } from '../common/enums/role.enum';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { CheckoutDto } from './dto/checkout.dto';
@@ -34,6 +35,12 @@ export class PurchasesService {
   ) {}
 
   async checkout(user: AuthUser, dto: CheckoutDto) {
+    if (user.role !== Role.PUBLIC) {
+      throw new ForbiddenException(
+        'Purchases are only available to public members.',
+      );
+    }
+
     const document = await this.prisma.document.findFirst({
       where: { id: dto.documentId, status: DocumentStatus.PUBLISHED },
       select: documentSelect,
@@ -86,6 +93,18 @@ export class PurchasesService {
   }
 
   async access(user: AuthUser, documentId: string) {
+    if (this.readsWithoutPurchase(user)) {
+      const document = await this.publishedDocument(documentId);
+      if (!document) {
+        return { granted: false, title: null, mimeType: null };
+      }
+      return {
+        granted: true,
+        title: document.title,
+        mimeType: document.mimeType,
+      };
+    }
+
     const paid = await this.paidPurchase(user.id, documentId);
     if (!paid) {
       return { granted: false, title: null, mimeType: null };
@@ -98,6 +117,20 @@ export class PurchasesService {
   }
 
   async getAuthorizedFile(user: AuthUser, documentId: string) {
+    if (this.readsWithoutPurchase(user)) {
+      const document = await this.publishedDocument(documentId);
+      if (!document) {
+        throw new ForbiddenException('This document is not available to view.');
+      }
+      const buffer = await this.storage.getObject(document.storageKey);
+      return {
+        buffer,
+        mimeType: document.mimeType,
+        originalName: document.originalName,
+        title: document.title,
+      };
+    }
+
     const paid = await this.paidPurchase(user.id, documentId);
     if (!paid) {
       throw new ForbiddenException(
@@ -112,6 +145,22 @@ export class PurchasesService {
       originalName: paid.document.originalName,
       title: paid.document.title,
     };
+  }
+
+  private readsWithoutPurchase(user: AuthUser) {
+    return user.role === Role.ADMIN || user.role === Role.STAFF;
+  }
+
+  private publishedDocument(documentId: string) {
+    return this.prisma.document.findFirst({
+      where: { id: documentId, status: DocumentStatus.PUBLISHED },
+      select: {
+        title: true,
+        mimeType: true,
+        originalName: true,
+        storageKey: true,
+      },
+    });
   }
 
   private paidPurchase(userId: string, documentId: string) {

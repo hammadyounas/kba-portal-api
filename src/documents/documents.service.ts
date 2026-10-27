@@ -132,7 +132,7 @@ export class DocumentsService {
       throw new NotFoundException('Document not found');
     }
 
-    this.assertCanManage(doc, user);
+    this.assertCanRead(doc, user);
     return doc;
   }
 
@@ -408,6 +408,19 @@ export class DocumentsService {
     if (!category) {
       throw new BadRequestException('Invalid category');
     }
+  }
+
+  private assertCanRead(
+    doc: { uploadedById: string; status: DocumentStatus },
+    user: AuthUser,
+  ) {
+    if (
+      doc.status === DocumentStatus.PUBLISHED &&
+      (user.role === Role.ADMIN || user.role === Role.STAFF)
+    ) {
+      return;
+    }
+    this.assertCanManage(doc, user);
   }
 
   private assertCanManage(
