@@ -6,7 +6,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { AppConfigService } from '../config/app-config.service';
 import {
   ObjectStorage,
   StoredObject,
@@ -18,18 +18,18 @@ export class MinioStorageService implements ObjectStorage {
   private readonly client: S3Client;
   private readonly bucket: string;
 
-  constructor(config: ConfigService) {
-    const endpoint = config.getOrThrow<string>('MINIO_ENDPOINT');
+  constructor(config: AppConfigService) {
+    const endpoint = config.getOrThrow('MINIO_ENDPOINT');
     const region = config.get<string>('MINIO_REGION') ?? 'us-east-1';
 
-    this.bucket = config.getOrThrow<string>('MINIO_BUCKET');
+    this.bucket = config.getOrThrow('MINIO_BUCKET');
     this.client = new S3Client({
       region,
       endpoint,
       forcePathStyle: true,
       credentials: {
-        accessKeyId: config.getOrThrow<string>('MINIO_ACCESS_KEY'),
-        secretAccessKey: config.getOrThrow<string>('MINIO_SECRET_KEY'),
+        accessKeyId: config.getOrThrow('MINIO_ACCESS_KEY'),
+        secretAccessKey: config.getOrThrow('MINIO_SECRET_KEY'),
       },
     });
   }

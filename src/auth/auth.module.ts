@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AppConfigModule } from '../config/app-config.module';
+import { AppConfigService } from '../config/app-config.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
@@ -10,12 +11,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>('JWT_SECRET'),
+      imports: [AppConfigModule],
+      inject: [AppConfigService],
+      useFactory: (config: AppConfigService) => ({
+        secret: config.getOrThrow('JWT_SECRET'),
         signOptions: {
-          // 7 days (seconds) — StringValue typing from `ms` is awkward with ConfigService
           expiresIn: Number(config.get('JWT_EXPIRES_SECONDS') ?? 60 * 60 * 24 * 7),
         },
       }),

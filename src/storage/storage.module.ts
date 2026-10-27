@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { AppConfigService } from '../config/app-config.service';
 import { LocalStorageService } from './local-storage.service';
 import { MinioStorageService } from './minio-storage.service';
 import { StorageService } from './storage.service';
@@ -13,9 +13,9 @@ export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
     LocalStorageService,
     {
       provide: OBJECT_STORAGE,
-      inject: [ConfigService, LocalStorageService],
+      inject: [AppConfigService, LocalStorageService],
       useFactory: (
-        config: ConfigService,
+        config: AppConfigService,
         local: LocalStorageService,
       ): ObjectStorage => {
         const mode = (config.get<string>('STORAGE_DRIVER') ?? 'local').toLowerCase();

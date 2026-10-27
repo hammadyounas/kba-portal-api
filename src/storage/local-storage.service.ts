@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { AppConfigService } from '../config/app-config.service';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { access, unlink, writeFile, stat } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -15,7 +15,7 @@ import {
 export class LocalStorageService implements ObjectStorage {
   private readonly root: string;
 
-  constructor(config: ConfigService) {
+  constructor(config: AppConfigService) {
     const configured = config.get<string>('STORAGE_LOCAL_ROOT');
     this.root = process.env.VERCEL
       ? join(tmpdir(), 'kba-private')
