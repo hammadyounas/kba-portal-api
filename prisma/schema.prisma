@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  PUBLIC
+}
+
+enum AccountStatus {
+  ACTIVE
+  PENDING
+  REJECTED
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum DocumentSource {
+  WEB_UPLOAD
+  MOBILE_SCAN
+}
+
+enum OcrStatus {
+  NONE
+  READY
+  FAILED
+}
+
+enum PaymentMethod {
+  CARD
+  JAZZCASH
+  EASYPAISA
+}
+
+enum PaymentStatus {
+  PAID
+  FAILED
+}
+
+model User {
+  id                String     @id @default(cuid())
+  email             String     @unique
+  passwordHash      String
+  fullName          String
+  role              Role          @default(PUBLIC)
+  accountStatus     AccountStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime   @updatedAt
+  uploadedDocuments Document[] @relation("UploadedBy")
+  purchases         Purchase[]
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  documents   Document[]
+}
+
+model Document {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  year            Int?
+  referenceNumber String?
+  feePkr          Int            @default(0)
+  status          DocumentStatus @default(DRAFT)
+  source          DocumentSource @default(WEB_UPLOAD)
+  /// Private object key in storage (never a public URL)
+  storageKey      String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int
+  /// Text read from the file. Used later by public search.
+  ocrText         String?
+  ocrStatus       OcrStatus      @default(NONE)
+  reviewNote      String?
+  reviewedAt      DateTime?
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  uploadedById    String
+  uploadedBy      User           @relation("UploadedBy", fields: [uploadedById], references: [id])
+  publishedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  purchases Purchase[]
+
+  @@index([status])
+  @@index([referenceNumber])
+  @@index([year])
+}
+
+model Purchase {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentId  String
+  document    Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  amountPkr   Int
+  method      PaymentMethod
+  status      PaymentStatus
+  reference   String        @unique
+  last4       String?
+  createdAt   DateTime      @default(now())
+  paidAt      DateTime?
+
+  @@index([userId, status])
+  @@index([documentId])
+}
