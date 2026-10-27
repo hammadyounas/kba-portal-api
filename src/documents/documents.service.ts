@@ -193,8 +193,10 @@ export class DocumentsService {
     }
     this.assertCanManage(existing, user);
 
-    if (existing.status === DocumentStatus.PUBLISHED && user.role !== Role.ADMIN) {
-      throw new ForbiddenException('Only admin can edit published documents');
+    if (user.role !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Only an admin can set the title, category, year, reference and fee.',
+      );
     }
 
     if (
@@ -258,10 +260,20 @@ export class DocumentsService {
     if (dto.decision === 'PUBLISH') {
       if (
         existing.status !== DocumentStatus.PENDING &&
-        existing.status !== DocumentStatus.UNPUBLISHED
+        existing.status !== DocumentStatus.UNPUBLISHED &&
+        existing.status !== DocumentStatus.DRAFT
       ) {
         throw new BadRequestException(
-          'Only a pending or unpublished document can be published',
+          'Only a draft, pending, or unpublished document can be published',
+        );
+      }
+      if (
+        !existing.categoryId ||
+        existing.year == null ||
+        !existing.referenceNumber?.trim()
+      ) {
+        throw new BadRequestException(
+          'Add the category, year, and reference number before publishing.',
         );
       }
       return this.prisma.document.update({
