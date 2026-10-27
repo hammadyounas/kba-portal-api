@@ -42,6 +42,7 @@ lerna-debug.log*
 # prisma / databases
 /prisma/dev.db
 /prisma/dev.db-journal
+/prisma/engines
 /prisma/migrations_sqlite_backup
 /generated/prisma
 /.pgdata

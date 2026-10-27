@@ -19,7 +19,13 @@ export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
         local: LocalStorageService,
       ): ObjectStorage => {
         const mode = (config.get<string>('STORAGE_DRIVER') ?? 'local').toLowerCase();
-        if (mode === 'minio') {
+        const minioReady = Boolean(
+          config.get<string>('MINIO_ENDPOINT') &&
+            config.get<string>('MINIO_BUCKET') &&
+            config.get<string>('MINIO_ACCESS_KEY') &&
+            config.get<string>('MINIO_SECRET_KEY'),
+        );
+        if (mode === 'minio' && minioReady) {
           return new MinioStorageService(config);
         }
         return local;
