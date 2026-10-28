@@ -19,5 +19,9 @@ export function assertAccountCanSignIn(user: {
     throw new UnauthorizedException('Your staff account was not approved.');
   }
 
+  if (user.role === 'STAFF' && user.accountStatus === AccountStatus.BLOCKED) {
+    throw new UnauthorizedException('Your staff account has been blocked.');
+  }
+
   throw new UnauthorizedException('This account is not active.');
 }

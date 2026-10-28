@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service';
+import { HostedFileService } from './hosted-file.service';
 import { LocalStorageService } from './local-storage.service';
 import { MinioStorageService } from './minio-storage.service';
 import { StorageService } from './storage.service';
@@ -36,7 +37,8 @@ export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
       inject: [OBJECT_STORAGE],
       useFactory: (driver: ObjectStorage) => new StorageService(driver),
     },
+    HostedFileService,
   ],
-  exports: [StorageService],
+  exports: [StorageService, HostedFileService],
 })
 export class StorageModule {}

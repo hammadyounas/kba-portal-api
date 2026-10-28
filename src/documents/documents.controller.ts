@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
@@ -66,9 +67,10 @@ export class DocumentsController {
   async getFile(
     @Param('id') id: string,
     @CurrentUser() user: AuthUser,
+    @Headers('authorization') authorization: string | undefined,
     @Res() res: Response,
   ) {
-    const file = await this.documentsService.getPrivateFile(id, user);
+    const file = await this.documentsService.getPrivateFile(id, user, authorization);
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader(
       'Content-Disposition',

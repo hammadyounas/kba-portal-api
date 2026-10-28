@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { Role } from '../common/enums/role.enum';
 import { PrismaService } from '../prisma/prisma.service';
+import { HostedFileService } from '../storage/hosted-file.service';
 import { StorageService } from '../storage/storage.service';
 import { CheckoutDto } from './dto/checkout.dto';
 
@@ -32,6 +33,7 @@ export class PurchasesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly hostedFiles: HostedFileService,
   ) {}
 
   async checkout(user: AuthUser, dto: CheckoutDto) {
@@ -94,7 +96,7 @@ export class PurchasesService {
 
   async access(user: AuthUser, documentId: string) {
     if (this.readsWithoutPurchase(user)) {
-      const document = await this.publishedDocument(documentId);
+      const document = await this.archiveDocument(documentId);
       if (!document) {
         return { granted: false, title: null, mimeType: null };
       }
@@ -116,13 +118,18 @@ export class PurchasesService {
     };
   }
 
-  async getAuthorizedFile(user: AuthUser, documentId: string) {
+  async getAuthorizedFile(user: AuthUser, documentId: string, authorization?: string) {
     if (this.readsWithoutPurchase(user)) {
-      const document = await this.publishedDocument(documentId);
+      const document = await this.archiveDocument(documentId);
       if (!document) {
         throw new ForbiddenException('This document is not available to view.');
       }
-      const buffer = await this.storage.getObject(document.storageKey);
+      const buffer = await this.hostedFiles.read(
+        document.storageKey,
+        documentId,
+        authorization,
+        document.mimeType,
+      );
       return {
         buffer,
         mimeType: document.mimeType,
@@ -138,7 +145,12 @@ export class PurchasesService {
       );
     }
 
-    const buffer = await this.storage.getObject(paid.document.storageKey);
+    const buffer = await this.hostedFiles.read(
+      paid.document.storageKey,
+      documentId,
+      authorization,
+      paid.document.mimeType,
+    );
     return {
       buffer,
       mimeType: paid.document.mimeType,
@@ -151,9 +163,9 @@ export class PurchasesService {
     return user.role === Role.ADMIN || user.role === Role.STAFF;
   }
 
-  private publishedDocument(documentId: string) {
+  private archiveDocument(documentId: string) {
     return this.prisma.document.findFirst({
-      where: { id: documentId, status: DocumentStatus.PUBLISHED },
+      where: { id: documentId },
       select: {
         title: true,
         mimeType: true,

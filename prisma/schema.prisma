@@ -18,6 +18,7 @@ enum AccountStatus {
   ACTIVE
   PENDING
   REJECTED
+  BLOCKED
 }
 
 enum DocumentStatus {
@@ -54,12 +55,29 @@ model User {
   email             String     @unique
   passwordHash      String
   fullName          String
+  phone             String?
   role              Role          @default(PUBLIC)
   accountStatus     AccountStatus @default(ACTIVE)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime   @updatedAt
   uploadedDocuments Document[] @relation("UploadedBy")
   purchases         Purchase[]
+  staffInvites      StaffInvite[]
+}
+
+model StaffInvite {
+  id          String    @id @default(cuid())
+  email       String
+  fullName    String
+  phone       String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  invitedById String
+  invitedBy   User      @relation(fields: [invitedById], references: [id])
+
+  @@index([email])
 }
 
 model Category {
@@ -67,6 +85,7 @@ model Category {
   name        String     @unique
   slug        String     @unique
   description String?
+  active      Boolean    @default(true)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   documents   Document[]

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -29,9 +29,10 @@ export class PurchasesController {
   async file(
     @CurrentUser() user: AuthUser,
     @Param('documentId') documentId: string,
+    @Headers('authorization') authorization: string | undefined,
     @Res() res: Response,
   ) {
-    const file = await this.purchases.getAuthorizedFile(user, documentId);
+    const file = await this.purchases.getAuthorizedFile(user, documentId, authorization);
     const filename = file.originalName.replace(/[\r\n"]/g, '').trim() || 'document';
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);

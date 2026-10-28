@@ -1,5 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
@@ -15,6 +24,21 @@ class CreateCategoryDto {
   @IsOptional()
   @IsString()
   description?: string;
+}
+
+class UpdateCategoryDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }
 
 @Controller('categories')
@@ -35,13 +59,19 @@ export class CategoriesController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.STAFF, Role.ADMIN)
   create(@Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(dto.name, dto.description);
   }
 
+  @Patch(':id')
+  @Roles(Role.STAFF, Role.ADMIN)
+  update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.categoriesService.update(id, dto);
+  }
+
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.STAFF, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
   }

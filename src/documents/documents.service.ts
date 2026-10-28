@@ -16,6 +16,7 @@ import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { PrismaService } from '../prisma/prisma.service';
+import { HostedFileService } from '../storage/hosted-file.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { OcrService } from './ocr.service';
@@ -62,12 +63,13 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly hostedFiles: HostedFileService,
     private readonly ocr: OcrService,
   ) {}
 
   async listForStaff(user: AuthUser) {
     const where =
-      user.role === Role.ADMIN
+      user.role === Role.ADMIN || user.role === Role.STAFF
         ? {}
         : { uploadedById: user.id };
 
@@ -359,9 +361,14 @@ export class DocumentsService {
     });
   }
 
-  async getPrivateFile(id: string, user: AuthUser) {
+  async getPrivateFile(id: string, user: AuthUser, authorization?: string) {
     const doc = await this.getById(id, user);
-    const buffer = await this.storage.getObject(doc.storageKey);
+    const buffer = await this.hostedFiles.read(
+      doc.storageKey,
+      doc.id,
+      authorization,
+      doc.mimeType,
+    );
     return {
       buffer,
       mimeType: doc.mimeType,
@@ -426,12 +433,7 @@ export class DocumentsService {
     doc: { uploadedById: string; status: DocumentStatus },
     user: AuthUser,
   ) {
-    if (
-      doc.status === DocumentStatus.PUBLISHED &&
-      (user.role === Role.ADMIN || user.role === Role.STAFF)
-    ) {
-      return;
-    }
+    if (user.role === Role.ADMIN || user.role === Role.STAFF) return;
     this.assertCanManage(doc, user);
   }
 
