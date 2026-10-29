@@ -15,13 +15,12 @@ import { HostedFileService } from '../storage/hosted-file.service';
 import { StorageService } from '../storage/storage.service';
 import { CheckoutDto } from './dto/checkout.dto';
 
-const DEMO_CARD = '4242424242424242';
-const DECLINE_CARD = '4000000000000002';
 const DEMO_MOBILE = '03001234567';
 
 const documentSelect = {
   id: true,
   title: true,
+  description: true,
   year: true,
   referenceNumber: true,
   feePkr: true,
@@ -201,20 +200,8 @@ export class PurchasesService {
     last4: string | null;
     reason: string;
   } {
-    if (dto.method === 'CARD') {
-      const number = (dto.cardNumber ?? '').replace(/\D/g, '');
-      const name = dto.cardName?.trim() ?? '';
-      const cvc = dto.cvc?.trim() ?? '';
-      if (name.length < 2 || !this.expiryIsValid(dto.expiry ?? '') || !/^\d{3}$/.test(cvc)) {
-        throw new BadRequestException('Enter the card name, a future expiry, and a 3-digit CVV.');
-      }
-      if (number === DECLINE_CARD) {
-        return { paid: false, last4: '0002', reason: 'The demo payment was declined.' };
-      }
-      if (number !== DEMO_CARD) {
-        throw new BadRequestException('Use the demo card shown on the checkout page.');
-      }
-      return { paid: true, last4: '4242', reason: '' };
+    if (dto.method !== 'JAZZCASH') {
+      throw new BadRequestException('Only JazzCash payments are accepted.');
     }
 
     const mobile = (dto.mobile ?? '').replace(/\D/g, '');
@@ -229,16 +216,6 @@ export class PurchasesService {
       };
     }
     return { paid: true, last4: mobile.slice(-4), reason: '' };
-  }
-
-  private expiryIsValid(value: string) {
-    const match = /^(\d{2})\/(\d{2})$/.exec(value.trim());
-    if (!match) return false;
-    const month = Number(match[1]);
-    const year = 2000 + Number(match[2]);
-    if (month < 1 || month > 12) return false;
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-    return endOfMonth.getTime() >= Date.now();
   }
 
   private reference() {
@@ -257,6 +234,7 @@ export class PurchasesService {
       document: {
         id: string;
         title: string;
+        description: string | null;
         year: number | null;
         referenceNumber: string | null;
         feePkr: number;

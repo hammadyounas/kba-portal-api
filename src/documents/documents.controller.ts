@@ -53,6 +53,12 @@ export class DocumentsController {
   }
 
   @Public()
+  @Get('published/catalog')
+  listCatalog() {
+    return this.documentsService.listPublishedCatalog();
+  }
+
+  @Public()
   @Get('published/:id')
   getPublished(@Param('id') id: string) {
     return this.documentsService.getPublished(id);

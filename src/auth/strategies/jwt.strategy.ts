@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Role } from '../../common/enums/role.enum';
 import { PrismaService } from '../../prisma/prisma.service';
 import { assertAccountCanSignIn } from '../account-access';
-import { AuthUser } from '../types/auth-user.type';
+import { AuthUser, toAuthUser } from '../types/auth-user.type';
 
 type JwtPayload = {
   sub: string;
@@ -37,11 +37,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     assertAccountCanSignIn(user);
 
-    return {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role as Role,
-    };
+    return toAuthUser(user);
   }
 }

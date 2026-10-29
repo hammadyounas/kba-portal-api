@@ -1,6 +1,6 @@
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export const PAYMENT_METHODS = ['CARD', 'JAZZCASH', 'EASYPAISA'] as const;
+export const PAYMENT_METHODS = ['JAZZCASH'] as const;
 export type PaymentMethodName = (typeof PAYMENT_METHODS)[number];
 
 export class CheckoutDto {

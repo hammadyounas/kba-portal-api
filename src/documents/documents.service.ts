@@ -68,10 +68,7 @@ export class DocumentsService {
   ) {}
 
   async listForStaff(user: AuthUser) {
-    const where =
-      user.role === Role.ADMIN || user.role === Role.STAFF
-        ? {}
-        : { uploadedById: user.id };
+    const where = user.role === Role.ADMIN ? {} : { uploadedById: user.id };
 
     return this.prisma.document.findMany({
       where,
@@ -96,6 +93,15 @@ export class DocumentsService {
       total,
       items: rows.map((row) => this.presentPublic(row, query.q)),
     };
+  }
+
+  async listPublishedCatalog() {
+    const rows = await this.prisma.document.findMany({
+      where: { status: DocumentStatus.PUBLISHED },
+      orderBy: { publishedAt: 'desc' },
+      select: publicDocumentSelect,
+    });
+    return rows.map((row) => this.presentPublic(row));
   }
 
   async getPublished(id: string) {
@@ -383,10 +389,6 @@ export class DocumentsService {
     }
     this.assertCanManage(existing, user);
 
-    if (existing.status === DocumentStatus.PUBLISHED && user.role !== Role.ADMIN) {
-      throw new ForbiddenException('Only admin can delete published documents');
-    }
-
     await this.prisma.document.delete({ where: { id } });
     await this.storage.deleteObject(existing.storageKey);
     return { deleted: true };
@@ -429,11 +431,8 @@ export class DocumentsService {
     }
   }
 
-  private assertCanRead(
-    doc: { uploadedById: string; status: DocumentStatus },
-    user: AuthUser,
-  ) {
-    if (user.role === Role.ADMIN || user.role === Role.STAFF) return;
+  private assertCanRead(doc: { uploadedById: string }, user: AuthUser) {
+    if (user.role === Role.ADMIN) return;
     this.assertCanManage(doc, user);
   }
 
@@ -488,6 +487,7 @@ export class DocumentsService {
     return {
       id: doc.id,
       title: doc.title,
+      description: doc.description?.trim() || null,
       summary: this.publicSummary(doc.description, doc.ocrText, keyword),
       year: doc.year,
       referenceNumber: doc.referenceNumber,

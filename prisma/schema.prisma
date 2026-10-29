@@ -56,6 +56,9 @@ model User {
   passwordHash      String
   fullName          String
   phone             String?
+  avatarKey         String?
+  avatarMime        String?
+  avatarUpdatedAt   DateTime?
   role              Role          @default(PUBLIC)
   accountStatus     AccountStatus @default(ACTIVE)
   createdAt         DateTime      @default(now())
