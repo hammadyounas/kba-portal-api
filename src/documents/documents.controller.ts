@@ -69,6 +69,12 @@ export class DocumentsController {
     return this.documentsService.getById(id, user);
   }
 
+  @Get(':id/purchasers')
+  @Roles(Role.ADMIN)
+  purchasers(@Param('id') id: string) {
+    return this.documentsService.listPurchasers(id);
+  }
+
   @Get(':id/file')
   async getFile(
     @Param('id') id: string,

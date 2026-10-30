@@ -15,8 +15,6 @@ import { HostedFileService } from '../storage/hosted-file.service';
 import { StorageService } from '../storage/storage.service';
 import { CheckoutDto } from './dto/checkout.dto';
 
-const DEMO_MOBILE = '03001234567';
-
 const documentSelect = {
   id: true,
   title: true,
@@ -207,13 +205,6 @@ export class PurchasesService {
     const mobile = (dto.mobile ?? '').replace(/\D/g, '');
     if (!/^03\d{9}$/.test(mobile)) {
       throw new BadRequestException('Enter an 11-digit mobile number starting with 03.');
-    }
-    if (mobile !== DEMO_MOBILE) {
-      return {
-        paid: false,
-        last4: mobile.slice(-4),
-        reason: 'The demo wallet payment was declined.',
-      };
     }
     return { paid: true, last4: mobile.slice(-4), reason: '' };
   }

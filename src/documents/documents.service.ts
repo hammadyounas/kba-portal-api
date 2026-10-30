@@ -9,6 +9,7 @@ import {
   DocumentSource,
   DocumentStatus,
   OcrStatus,
+  PaymentStatus,
   Prisma,
   Role,
 } from '@prisma/client';
@@ -142,6 +143,37 @@ export class DocumentsService {
 
     this.assertCanRead(doc, user);
     return doc;
+  }
+
+  async listPurchasers(id: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    const purchases = await this.prisma.purchase.findMany({
+      where: { documentId: id, status: PaymentStatus.PAID },
+      orderBy: { paidAt: 'desc' },
+      select: {
+        id: true,
+        amountPkr: true,
+        method: true,
+        reference: true,
+        paidAt: true,
+        user: {
+          select: { id: true, fullName: true, email: true, phone: true },
+        },
+      },
+    });
+
+    return {
+      total: purchases.length,
+      feesPkr: purchases.reduce((sum, row) => sum + row.amountPkr, 0),
+      purchasers: purchases,
+    };
   }
 
   async create(
